@@ -1,5 +1,7 @@
+#define _XOPEN_SOURCE 700
 #include <stdio.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <dirent.h>
@@ -8,6 +10,7 @@
 
 // commands:
 // build : gcc -std=c11 -Wall -Wextra -O2 -o summarize_tree summarize_tree.c
+// bats -f '^summarize_tree ' summarize_tree_test.bats
 // bats ./summarize_tree_test.bats
 static int num_dirs, num_regular;
 
@@ -21,10 +24,10 @@ bool is_dir(const char* path) {
    */
 
   struct stat st;
-    if (stat(path, &st) != 0) {
-        return false;
-    }
-    return S_ISDIR(st.st_mode);
+  if (stat(path, &st) == 0 && S_ISDIR(st.st_mode)) {
+      return true;
+  }
+  return false;
 }
 
 /* 
@@ -76,8 +79,10 @@ void process_file(const char* path) {
    * Update the number of regular files.
    * This is as simple as it seems. :-)
    */
-  (void)path;
-  num_regular++;
+  struct stat st;
+  if (stat(path, &st) == 0 && S_ISREG(st.st_mode)) {
+      num_regular++;
+  }
 }
 
 void process_path(const char* path) {
