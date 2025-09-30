@@ -1,4 +1,5 @@
-#!/bin/env bash
+#!/usr/bin/env bash
+
 set -euo pipefail
 
 # commands for execute and testing with bats test: 
