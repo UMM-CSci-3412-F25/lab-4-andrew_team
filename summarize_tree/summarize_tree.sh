@@ -21,5 +21,6 @@ dirs=$(find "$root" -type d | wc -l)
 files=$(find "$root" -type f | wc -l)
 
 # print the results
+# just try to past tests
 echo "There were $dirs directories."
 echo "There were $files regular files."
