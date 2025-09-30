@@ -1,11 +1,17 @@
+#define _XOPEN_SOURCE 700
 #include <stdio.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <dirent.h>
 #include <unistd.h>
 #include <string.h>
 
+// commands:
+// build : gcc -std=c11 -Wall -Wextra -O2 -o summarize_tree summarize_tree.c
+// bats -f '^summarize_tree ' summarize_tree_test.bats
+// bats ./summarize_tree_test.bats
 static int num_dirs, num_regular;
 
 bool is_dir(const char* path) {
@@ -16,6 +22,12 @@ bool is_dir(const char* path) {
    * return value from stat() in case there is a problem, e.g., maybe the
    * the file doesn't actually exist.
    */
+
+  struct stat st;
+  if (stat(path, &st) == 0 && S_ISDIR(st.st_mode)) {
+      return true;
+  }
+  return false;
 }
 
 /* 
@@ -36,6 +48,30 @@ void process_directory(const char* path) {
    * with a matching call to chdir() to move back out of it when you're
    * done.
    */
+
+   num_dirs++;
+   if (chdir(path) != 0) {
+      return;
+   }
+
+   DIR *dirp = opendir(".");
+   if (!dirp) {
+      if (chdir("..") != 0) { perror("chdir .."); }
+      return;
+   }
+
+   struct dirent *dp;
+   while ((dp = readdir(dirp)) != NULL) {
+      const char *name = dp->d_name;
+      // Skip "." and ".." entries.
+      if (strcmp(name, ".") == 0 || strcmp(name, "..") == 0) continue;
+      process_path(name);
+   }
+
+  // Close the directory
+  // return to parent directory keeping path stack correctly aligned
+  if (closedir(dirp) != 0) { perror("closedir"); }
+  if (chdir("..") != 0) { perror("chdir .."); }
 }
 
 void process_file(const char* path) {
@@ -43,6 +79,10 @@ void process_file(const char* path) {
    * Update the number of regular files.
    * This is as simple as it seems. :-)
    */
+  struct stat st;
+  if (stat(path, &st) == 0 && S_ISREG(st.st_mode)) {
+      num_regular++;
+  }
 }
 
 void process_path(const char* path) {
